@@ -180,19 +180,19 @@
                         ctx.fillStyle = `rgb(${gray},${gray},${gray})`;
                         ctx.fillRect(px, py, pixelSize, pixelSize);
 
-                       // **纯绿框：无数字！优雅包围**
+// **纯绿框：无数字！优雅包围**
 if (closestTouchId !== -1 && minDist < 1.8) {
     // **核心纯白**
     ctx.fillStyle = 'white';
-    ctx.fillRect(px + pixelSize*0.08, py + pixelSize*0.08, pixelSize*0.84, pixelSize*0.84);
+    ctx.fillRect(px + pixelSize*0.12, py + pixelSize*0.12, pixelSize*0.76, pixelSize*0.76);
 
-    // **细绿框 + 柔光**
+    // **极细绿框：电光感锐利**
     ctx.strokeStyle = 'lime';
-    ctx.lineWidth = Math.max(2, pixelSize * 0.25);
+    ctx.lineWidth = Math.max(1, pixelSize * 0.08); // ✅ 极细，仅约3px左右
     ctx.lineCap = 'round';
     ctx.lineJoin = 'round';
     ctx.shadowColor = 'lime';
-    ctx.shadowBlur = pixelSize * 0.3;
+    ctx.shadowBlur = pixelSize * 0.15; // ✅ 轻柔发光，不糊
     ctx.strokeRect(px + pixelSize*0.12, py + pixelSize*0.12, pixelSize*0.76, pixelSize*0.76);
     ctx.shadowBlur = 0; // 重置
 }

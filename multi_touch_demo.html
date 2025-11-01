@@ -180,22 +180,22 @@
                         ctx.fillStyle = `rgb(${gray},${gray},${gray})`;
                         ctx.fillRect(px, py, pixelSize, pixelSize);
 
-                        // **纯绿框：无数字！优雅包围**
-                        if (closestTouchId !== -1 && minDist < 1.8) {
-                            // **核心纯白**
-                            ctx.fillStyle = 'white';
-                            ctx.fillRect(px + pixelSize*0.08, py + pixelSize*0.08, pixelSize*0.84, pixelSize*0.84);
+                       // **纯绿框：无数字！优雅包围**
+if (closestTouchId !== -1 && minDist < 1.8) {
+    // **核心纯白**
+    ctx.fillStyle = 'white';
+    ctx.fillRect(px + pixelSize*0.08, py + pixelSize*0.08, pixelSize*0.84, pixelSize*0.84);
 
-                            // **粗绿框：发光般**
-                            ctx.strokeStyle = 'lime';
-                            ctx.lineWidth = Math.max(6, pixelSize * 0.7);
-                            ctx.lineCap = 'round';
-                            ctx.lineJoin = 'round';
-                            ctx.shadowColor = 'lime';
-                            ctx.shadowBlur = 8;
-                            ctx.strokeRect(px + pixelSize*0.12, py + pixelSize*0.12, pixelSize*0.76, pixelSize*0.76);
-                            ctx.shadowBlur = 0; // 重置
-                        }
+    // **细绿框 + 柔光**
+    ctx.strokeStyle = 'lime';
+    ctx.lineWidth = Math.max(2, pixelSize * 0.25);
+    ctx.lineCap = 'round';
+    ctx.lineJoin = 'round';
+    ctx.shadowColor = 'lime';
+    ctx.shadowBlur = pixelSize * 0.3;
+    ctx.strokeRect(px + pixelSize*0.12, py + pixelSize*0.12, pixelSize*0.76, pixelSize*0.76);
+    ctx.shadowBlur = 0; // 重置
+}
                     }
                 }
             }

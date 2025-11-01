@@ -1,0 +1,213 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>Multi-Touch Visualizer v2 - iPad 测试（正方形像素 + 超随机）</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            overflow: hidden;
+        }
+        body {
+            background: black;
+            touch-action: none;
+            font-family: -apple-system, sans-serif;
+        }
+        canvas {
+            display: block;
+            cursor: none;
+        }
+        #info {
+            position: fixed;
+            top: 10px;
+            left: 10px;
+            color: lime;
+            font-size: 14px;
+            z-index: 10;
+            pointer-events: none;
+            user-select: none;
+            background: rgba(0,0,0,0.7);
+            padding: 10px;
+            border-radius: 8px;
+        }
+        @media (max-width: 768px) {
+            #info { font-size: 12px; }
+        }
+    </style>
+</head>
+<body>
+    <canvas id="canvas"></canvas>
+    <div id="info">
+        <div>手指数量: <span id="touchCount">0</span></div>
+        <div>力度总和: <span id="totalForce">0</span></div>
+        <div>💡 多指触摸 + 按压测试！<br>像素已统一正方形，随机超自然</div>
+    </div>
+
+    <script>
+        const canvas = document.getElementById('canvas');
+        const ctx = canvas.getContext('2d');
+        const touchCountEl = document.getElementById('touchCount');
+        const totalForceEl = document.getElementById('totalForce');
+
+        // 网格配置：200x200 超精细正方形
+        const GRID_SIZE = 200;
+        let pixelSize = 1;
+        let offsetX = 0, offsetY = 0;
+        let touches = new Map(); // touchId -> {x,y,gridX,gridY,force,radius,seed}
+
+        // 基础触控参数
+        const BASE_RADIUS = 5.0;
+        const CORE_SIZE = 1.0;
+
+        // 改进噪声：多层 Perlin-like + per-touch seed
+        function noise(x, y, seed = 0) {
+            let n = 0;
+            let amp = 1;
+            for (let i = 0; i < 3; i++) { // 多层噪声 = 更自然
+                x += seed * 0.1;
+                y += seed * 0.17;
+                n += amp * ((Math.sin(x * 12.9898 + y * 78.233 + seed) * 43758.5453) % 1);
+                amp *= 0.5;
+                x *= 2; y *= 2;
+            }
+            return (n - 0.5) * 0.4 + 0.8; // 0.4~1.2 变异
+        }
+
+        function resize() {
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+            const size = Math.min(canvas.width, canvas.height);
+            pixelSize = size / GRID_SIZE;
+            offsetX = (canvas.width - size) / 2;
+            offsetY = (canvas.height - size) / 2;
+        }
+
+        function updateTouches(event) {
+            event.preventDefault();
+            touches.clear();
+            let totalForce = 0;
+            for (let i = 0; i < event.touches.length; i++) {
+                const touch = event.touches[i];
+                const rect = canvas.getBoundingClientRect();
+                const x = ((touch.clientX - rect.left) - offsetX) / pixelSize;
+                const y = ((touch.clientY - rect.top) - offsetY) / pixelSize;
+                const gridX = Math.floor(x);
+                const gridY = Math.floor(y);
+                const force = touch.force || 1.0;
+                const radius = Math.max(2, (touch.radiusX || 20) * 0.15); // 真实半径
+                const seed = (touch.identifier * 123.456) % 10000; // 唯一种子
+                touches.set(touch.identifier, { x, y, gridX, gridY, force, radius, seed });
+                totalForce += force;
+            }
+            touchCountEl.textContent = touches.size;
+            totalForceEl.textContent = totalForce.toFixed(1);
+            render();
+        }
+
+        function render() {
+            // 清屏黑底
+            ctx.fillStyle = 'black';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            // 只绘制网格区域
+            const gridLeft = offsetX;
+            const gridTop = offsetY;
+            const gridW = GRID_SIZE * pixelSize;
+            const gridH = gridW; // 正方形
+
+            // 绘制每个像素（优化：只渲染活跃区域）
+            for (let gy = 0; gy < GRID_SIZE; gy++) {
+                for (let gx = 0; gx < GRID_SIZE; gx++) {
+                    let maxBright = 0;
+                    let coreTouch = null;
+
+                    touches.forEach(touch => {
+                        const dx = gx - touch.gridX;
+                        const dy = gy - touch.gridY;
+                        const dist = Math.sqrt(dx*dx + dy*dy);
+                        const touchR = touch.radius * BASE_RADIUS; // 动态半径
+
+                        if (dist < CORE_SIZE) {
+                            coreTouch = touch;
+                            maxBright = 1.0;
+                            return;
+                        }
+
+                        if (dist < touchR) {
+                            let bright = (1.0 - dist / touchR) * touch.force;
+                            // **超随机**：per-touch 多层噪声
+                            bright *= noise(gx * 0.08, gy * 0.08, touch.seed);
+                            maxBright = Math.max(maxBright, bright);
+                        }
+                    });
+
+                    if (maxBright > 0.05) { // 阈值优化性能
+                        const px = gridLeft + gx * pixelSize;
+                        const py = gridTop + gy * pixelSize;
+
+                        // 填充：深浅随机灰白
+                        const gray = Math.floor(maxBright * 255);
+                        ctx.fillStyle = `rgb(${gray},${gray},${gray})`;
+                        ctx.fillRect(px, py, pixelSize, pixelSize);
+
+                        // **核心点**：纯白 + 粗绿框（编号）
+                        if (coreTouch) {
+                            ctx.fillStyle = 'white';
+                            ctx.fillRect(px + pixelSize*0.05, py + pixelSize*0.05, pixelSize*0.9, pixelSize*0.9);
+
+                            ctx.strokeStyle = 'lime';
+                            ctx.lineWidth = Math.max(3, pixelSize * 0.4);
+                            ctx.lineCap = 'round';
+                            ctx.strokeRect(px + pixelSize*0.08, py + pixelSize*0.08, pixelSize*0.84, pixelSize*0.84);
+
+                            // 编号标签（小）
+                            ctx.fillStyle = 'lime';
+                            ctx.font = `${pixelSize*0.6}px monospace`;
+                            ctx.textAlign = 'center';
+                            ctx.textBaseline = 'middle';
+                            ctx.fillText(
+                                Array.from(touches.keys()).indexOf(coreTouch.identifier)+1 + '',
+                                px + pixelSize/2,
+                                py + pixelSize/2
+                            );
+                        }
+                    }
+                }
+            }
+        }
+
+        // 事件：Touch 全支持
+        canvas.addEventListener('touchstart', updateTouches, { passive: false });
+        canvas.addEventListener('touchmove', updateTouches, { passive: false });
+        canvas.addEventListener('touchend', updateTouches, { passive: false });
+        canvas.addEventListener('touchcancel', updateTouches, { passive: false });
+
+        // Mouse 测试（单点）
+        canvas.addEventListener('mousemove', (e) => {
+            touches.clear();
+            const x = ((e.clientX - offsetX)) / pixelSize;
+            const y = ((e.clientY - offsetY)) / pixelSize;
+            touches.set(999, {
+                x, y, gridX: Math.floor(x), gridY: Math.floor(y),
+                force: 1, radius: 5, seed: 999
+            });
+            touchCountEl.textContent = 1;
+            totalForceEl.textContent = '1.0';
+            render();
+        });
+        canvas.addEventListener('mousedown', () => updateTouches({ touches: [] }));
+        canvas.addEventListener('mouseup', () => {
+            touches.clear(); touchCountEl.textContent = 0; totalForceEl.textContent = '0';
+            render();
+        });
+
+        // 自适应
+        window.addEventListener('resize', resize);
+        window.addEventListener('orientationchange', () => setTimeout(resize, 100));
+        resize();
+        render();
+    </script>
+</body>
+</html>

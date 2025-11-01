@@ -35,7 +35,6 @@
         const touchCountEl = document.getElementById('touchCount');
         const pixelInfoEl = document.getElementById('pixelInfo');
 
-        // 🔥 **完美平衡：25x25 = ~40px/格！适中巨清！**
         const GRID_SIZE = 25;
         let pixelSize = 1;
         let dpr = 1;
@@ -52,11 +51,10 @@
             return n % 1;
         }
 
-        // **慢变优雅：time * 0.5 = 2X慢！**
         function computeDynamicShape(dx, dy, seed, time, force) {
-            const wiggle = noise(time * 1.5 + seed) * 0.4; // **慢wiggle**
+            const wiggle = noise(time * 1.5 + seed) * 0.4; 
             const rot = (noise(seed) + wiggle) * Math.PI * 2;
-            const scaleX = 1.8 + noise(seed + 10 + time * 0.8) * 1.4; // **慢scale**
+            const scaleX = 1.8 + noise(seed + 10 + time * 0.8) * 1.4;
             const scaleY = 2.2 + noise(seed + 20 + time * 1.0) * 1.6;
             const skew = (noise(seed + 30 + time * 0.6) - 0.5) * 0.5;
 
@@ -74,7 +72,7 @@
 
             val *= (0.78 + noise(dx*0.5 + time * 1.5, dy*0.5 + time * 1.5, seed) * 0.44);
             val *= (0.92 + noise(dx*1.0, dy*1.0, seed + 100 + time*2.5) * 0.16);
-            val *= force * (0.96 + Math.sin(time * 2.5 + seed) * 0.08); // **超慢脉动**
+            val *= force * (0.96 + Math.sin(time * 2.5 + seed) * 0.08);
 
             return Math.max(0, val);
         }
@@ -92,7 +90,7 @@
             ctx.scale(dpr, dpr);
 
             const size = Math.min(window.innerWidth, window.innerHeight);
-            pixelSize = size / GRID_SIZE; // **~40px 黄金！**
+            pixelSize = size / GRID_SIZE; 
             offsetX = (window.innerWidth - size) / 2;
             offsetY = (window.innerHeight - size) / 2;
 
@@ -126,7 +124,7 @@
                     const pos = getTouchPos(touch);
                     touchData.centerX = pos.x;
                     touchData.centerY = pos.y;
-                    touchData.force = 0.7 + Math.sin(Date.now() * 0.003 + touch.identifier) * 0.3; // **慢force**
+                    touchData.force = 0.7 + Math.sin(Date.now() * 0.003 + touch.identifier) * 0.3;
                 }
             }
             updateDisplay();
@@ -145,7 +143,7 @@
         }
 
         function render() {
-            const time = (Date.now() - startTime) * 0.0005; // **5X慢！梦幻节奏**
+            const time = (Date.now() - startTime) * 0.0005;
 
             ctx.fillStyle = 'black';
             ctx.fillRect(0, 0, canvas.width / dpr, canvas.height / dpr);
@@ -164,12 +162,10 @@
 
                         const bright = computeDynamicShape(dx, dy, touch.seed, time, touch.force);
 
-                        if (bright > maxBright) {
+                        if (bright > maxBright && dist < minDist) {
                             maxBright = bright;
-                            if (dist < minDist) {
-                                minDist = dist;
-                                closestTouchId = id;
-                            }
+                            closestTouchId = id;
+                            minDist = dist;
                         }
                     });
 
@@ -180,22 +176,20 @@
                         ctx.fillStyle = `rgb(${gray},${gray},${gray})`;
                         ctx.fillRect(px, py, pixelSize, pixelSize);
 
-                     // **纯绿框：无数字！优雅包围**
-if (closestTouchId !== -1 && minDist < 1.8) {
-    // **核心纯白**
-    ctx.fillStyle = 'white';
-    ctx.fillRect(px + pixelSize*0.12, py + pixelSize*0.12, pixelSize*0.76, pixelSize*0.76);
+                        // Only draw the green frame for the closest touch point
+                        if (closestTouchId !== -1) {
+                            ctx.fillStyle = 'white';
+                            ctx.fillRect(px + pixelSize*0.12, py + pixelSize*0.12, pixelSize*0.76, pixelSize*0.76);
 
-    // **极细绿框：电光感锐利**
-    ctx.strokeStyle = 'lime';
-    ctx.lineWidth = Math.max(1, pixelSize * 0.08); // ✅ 极细，仅约3px左右
-    ctx.lineCap = 'round';
-    ctx.lineJoin = 'round';
-    ctx.shadowColor = 'lime';
-    ctx.shadowBlur = pixelSize * 0.15; // ✅ 轻柔发光，不糊
-    ctx.strokeRect(px + pixelSize*0.12, py + pixelSize*0.12, pixelSize*0.76, pixelSize*0.76);
-    ctx.shadowBlur = 0; // 重置
-}
+                            ctx.strokeStyle = 'lime';
+                            ctx.lineWidth = Math.max(1, pixelSize * 0.08);
+                            ctx.lineCap = 'round';
+                            ctx.lineJoin = 'round';
+                            ctx.shadowColor = 'lime';
+                            ctx.shadowBlur = pixelSize * 0.15;
+                            ctx.strokeRect(px + pixelSize*0.12, py + pixelSize*0.12, pixelSize*0.76, pixelSize*0.76);
+                            ctx.shadowBlur = 0;
+                        }
                     }
                 }
             }
@@ -234,3 +228,4 @@ if (closestTouchId !== -1 && minDist < 1.8) {
     </script>
 </body>
 </html>
+
